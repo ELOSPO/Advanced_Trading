@@ -7,6 +7,9 @@
 
 import statsmodels.api as stat
 import statsmodels.tsa.stattools as ts
+import MetaTrader5 as mt5
+import pandas as pd 
+import numpy as np
 
 def test_cointegration(serie_a, serie_b,p_value):
     model = stat.OLS(serie_a,serie_b)
