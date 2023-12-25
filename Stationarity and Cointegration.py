@@ -1,4 +1,5 @@
 ### Arbitraje Estadístico Capitulo 1: Cointegración y Estacionareidad ###
+### Mean Reverting Strategy with Trend Following ###
 
 # Una serie de tiempo tiende a retornar a la media si es estacionaria. Emtonces es un buen concepto para usarlo en trading
 
@@ -13,6 +14,7 @@ import numpy as np
 from Easy_Trading import Basic_funcs
 import itertools
 from scipy.stats import pearsonr
+from tqdm import tqdm
 
 nombre = 67043467
 clave = 'Genttly.2022'
@@ -35,11 +37,12 @@ pair_b = 'GBPUSD'
 
 
 list_of_symb = ['EURUSD','USDCAD','GBPUSD','XAUUSD','CADJPY','EURAUD','USDCHF','AUDUSD',
-                'BTCUSD','ETHUSD','AUDNZD','AUDCAD','GBPCAD','GBPNZD','USDJPY']
+                'BTCUSD','ETHUSD','AUDNZD','AUDCAD','GBPCAD','GBPNZD','USDJPY','EURJPY',
+                'CADCHF','EURCAD']
 
 # combinaciones de las monedas
 
-lists = list(itertools.combinations(list_of_symb, 2))
+lists = list(set(itertools.combinations(list_of_symb, 2)))
 
 list_of_a = []
 list_of_b = []
@@ -47,15 +50,15 @@ result_coint = []
 result_corr = []
 
 
-for list_symb in lists:
+for list_symb in tqdm(lists):
     s_a = list_symb[0]
     s_b = list_symb[1]
-    series_a = bfs.extract_data(s_a,mt5.TIMEFRAME_M1,9999)['close']
-    series_b = bfs.extract_data(s_b,mt5.TIMEFRAME_M1,9999)['close']
-    print(f'Combinación {s_a} y {s_b}')
+    series_a = bfs.extract_data(s_a,mt5.TIMEFRAME_H4,9999)['close']
+    series_b = bfs.extract_data(s_b,mt5.TIMEFRAME_H4,9999)['close']
+    # print(f'Combinación {s_a} y {s_b}')
     list_of_a.append(s_a)
     list_of_b.append(s_b)
-    result_coint.append(test_cointegration(series_a, series_b,0.1)[0])
+    result_coint.append(test_cointegration(series_a, series_b,0.05)[0])
     result_corr.append(pearsonr(series_a,series_b)[0])
 
 results_df = pd.DataFrame(zip(list_of_a,list_of_b,result_coint,result_corr),
@@ -63,14 +66,32 @@ results_df = pd.DataFrame(zip(list_of_a,list_of_b,result_coint,result_corr),
 
 ### Graficamos los residuales ###
 
-series_b = bfs.extract_data('GBPCAD',mt5.TIMEFRAME_M1,9999)['close']
-series_a = bfs.extract_data('GBPNZD',mt5.TIMEFRAME_M1,9999)['close']
+series_b = bfs.extract_data('AUDCAD',mt5.TIMEFRAME_H1,9999)['close']
+series_a = bfs.extract_data('GBPNZD',mt5.TIMEFRAME_H1,9999)['close']
 
 res_adf, model = test_cointegration(series_a, series_b,0.1)
 residuals = model.resid
 g1 = residuals.plot()
 g1.axhline(residuals.mean(),color = 'red')
+g1.axhline(residuals.mean() + 2*residuals.std() ,color = 'green')
+g1.axhline(residuals.mean() - 2*residuals.std() ,color = 'green')
+# residuals.mean()
+# residuals.hist(bins = 40)
+
+#Graficamos las series de tiempo junto con los residuales para extraer las
+#conclusiones
+series_a.plot()
+series_b.plot()
+residuals.plot(secondary_y = True)
+
+asset_1 = bfs.extract_data('AUDCAD',mt5.TIMEFRAME_H1,9999)
+asset_1['resid'] = residuals
 
 
-residuals.mean()
-residuals.hist(bins = 40)
+# la estrategia de Trading ¿entiendo la correlación negativa pero 
+# ¿Qué hacer con las positivas?
+
+## La Estrategia de Trading ##
+
+
+
